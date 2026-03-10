@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Forensic Agents — When Machines Fail, We Investigate</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --navy: #0a0e1a;
+    --charcoal: #141824;
+    --charcoal-light: #1c2235;
+    --gold: #d4a24e;
+    --gold-light: #e8c47a;
+    --gold-dark: #b8862e;
+    --amber: #f0a830;
+    --white: #f0f0f0;
+    --gray: #9ca3af;
+    --red-muted: #c44d4d;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: Georgia, 'Times New Roman', Times, serif;
+    background: var(--navy);
+    color: var(--white);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(10,14,26,0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(212,162,78,0.15);
+    padding: 0 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 64px;
+  }
+  nav .logo {
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-weight: 700; font-size: 1.1rem;
+    color: var(--gold);
+    letter-spacing: 0.04em;
+    text-decoration: none;
+  }
+  nav .logo span { color: var(--white); font-weight: 400; }
+  nav ul { list-style: none; display: flex; gap: 1.8rem; }
+  nav ul li a {
+    color: var(--gray); text-decoration: none; font-size: 0.88rem;
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+    transition: color 0.3s;
+  }
+  nav ul li a:hover { color: var(--gold); }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center;
+    padding: 6rem 2rem 4rem;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 30%, rgba(212,162,78,0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 80% at 20% 80%, rgba(196,77,77,0.06) 0%, transparent 60%),
+      linear-gradient(175deg, #0d1220 0%, #0a0e1a 40%, #111827 100%);
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(212,162,78,0.012) 2px,
+        rgba(212,162,78,0.012) 4px
+      );
+    pointer-events: none;
+  }
+  .hero::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 200px;
+    background: linear-gradient(to top, var(--navy), transparent);
+    pointer-events: none;
+  }
+
+  /* Steam particles */
+  .steam-particle {
+    position: absolute;
+    width: 3px; height: 3px;
+    background: rgba(212,162,78,0.25);
+    border-radius: 50%;
+    animation: steamRise linear infinite;
+    pointer-events: none;
+  }
+  @keyframes steamRise {
+    0% { opacity: 0; transform: translateY(0) scale(1); }
+    20% { opacity: 0.6; }
+    100% { opacity: 0; transform: translateY(-60vh) scale(2.5); }
+  }
+
+  .hero-content { position: relative; z-index: 2; max-width: 860px; }
+
+  .hero-eyebrow {
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 1.5rem;
+    opacity: 0.9;
+  }
+  .hero h1 {
+    font-size: clamp(2.2rem, 5.5vw, 4rem);
+    font-weight: 700;
+    line-height: 1.15;
+    margin-bottom: 1.5rem;
+    color: var(--white);
+  }
+  .hero h1 em {
+    font-style: italic;
+    color: var(--gold);
+  }
+  .hero .subtitle {
+    font-size: clamp(1.05rem, 2vw, 1.3rem);
+    color: var(--gray);
+    max-width: 640px;
+    margin: 0 auto 2.5rem;
+    line-height: 1.8;
+  }
+  .hero-cta {
+    display: inline-block;
+    padding: 0.9rem 2.4rem;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: var(--navy);
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-decoration: none;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+    transition: transform 0.3s, box-shadow 0.3s;
+    box-shadow: 0 4px 24px rgba(212,162,78,0.25);
+  }
+  .hero-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(212,162,78,0.35);
+  }
+
+  .scroll-indicator {
+    position: absolute;
+    bottom: 2rem; left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 0.5rem;
+    color: var(--gray);
+    font-size: 0.72rem;
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    animation: bobDown 2s ease-in-out infinite;
+  }
+  @keyframes bobDown {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(8px); }
+  }
+  .scroll-indicator .arrow { font-size: 1.2rem; color: var(--gold); }
+
+  /* ── SECTIONS ── */
+  section { padding: 5rem 2rem; }
+
+  .container { max-width: 900px; margin: 0 auto; }
+
+  .section-eyebrow {
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 1rem;
+  }
+  .section-title {
+    font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    line-height: 1.25;
+  }
+  .section-title span { color: var(--gold); }
+
+  .divider {
+    width: 60px; height: 2px;
+    background: var(--gold);
+    margin: 0 0 2rem;
+    opacity: 0.6;
+  }
+  .divider-center { margin: 0 auto 2rem; }
+
+  /* ── ABOUT ── */
+  .about { background: var(--charcoal); }
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    align-items: start;
+  }
+  .about-text p { color: var(--gray); margin-bottom: 1.2rem; font-size: 1.02rem; }
+  .about-text p:first-of-type::first-letter {
+    font-size: 3rem;
+    float: left;
+    line-height: 1;
+    margin-right: 0.4rem;
+    color: var(--gold);
+    font-weight: 700;
+  }
+  .about-values { list-style: none; }
+  .about-values li {
+    padding: 1.2rem 1.4rem;
+    background: rgba(212,162,78,0.04);
+    border-left: 3px solid var(--gold);
+    margin-bottom: 0.8rem;
+    font-size: 0.95rem;
+    color: var(--white);
+    border-radius: 0 4px 4px 0;
+  }
+  .about-values li strong {
+    color: var(--gold);
+    display: block;
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.3rem;
+  }
+
+  /* ── NARRATIVE ── */
+  .narrative { background: var(--navy); }
+  .narrative .lead-text {
+    font-size: 1.15rem;
+    color: var(--gray);
+    max-width: 760px;
+    margin-bottom: 3rem;
+    line-height: 1.9;
+  }
+  .narrative .lead-text strong { color: var(--white); }
+
+  .pullquote {
+    border-left: 3px solid var(--gold);
+    padding: 1.5rem 2rem;
+    margin: 2.5rem 0;
+    background: rgba(212,162,78,0.03);
+    font-size: 1.2rem;
+    font-style: italic;
+    color: var(--gold-light);
+    line-height: 1.7;
+  }
+
+  /* Disaster timeline */
+  .disaster-timeline {
+    position: relative;
+    padding-left: 2.5rem;
+    margin: 3rem 0;
+  }
+  .disaster-timeline::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--gold), rgba(212,162,78,0.1));
+  }
+  .disaster-entry {
+    position: relative;
+    margin-bottom: 1.8rem;
+    padding-bottom: 1.8rem;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .disaster-entry:last-child { border-bottom: none; margin-bottom: 0; }
+  .disaster-entry::before {
+    content: '';
+    position: absolute;
+    left: -2.65rem; top: 0.45rem;
+    width: 10px; height: 10px;
+    background: var(--gold);
+    border-radius: 50%;
+    box-shadow: 0 0 12px rgba(212,162,78,0.4);
+  }
+  .disaster-year {
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 0.78rem;
+    color: var(--gold);
+    letter-spacing: 0.12em;
+    font-weight: 700;
+  }
+  .disaster-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--white);
+    margin: 0.3rem 0;
+  }
+  .disaster-details {
+    font-size: 0.92rem;
+    color: var(--gray);
+    line-height: 1.6;
+  }
+  .disaster-toll {
+    display: inline-block;
+    margin-top: 0.4rem;
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 0.8rem;
+    color: var(--red-muted);
+    font-weight: 600;
+  }
+
+  .stat-bar {
+    display: flex; gap: 2rem; flex-wrap: wrap;
+    margin: 3rem 0;
+    padding: 2rem;
+    background: var(--charcoal);
+    border-radius: 6px;
+    border: 1px solid rgba(212,162,78,0.1);
+  }
+  .stat-item { flex: 1; min-width: 140px; text-align: center; }
+  .stat-number {
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--gold);
+    line-height: 1;
+    margin-bottom: 0.3rem;
+  }
+  .stat-label {
+    font-size: 0.78rem;
+    color: var(--gray);
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* ── PARALLEL ── */
+  .parallel { background: var(--charcoal); }
+  .parallel-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    margin: 2.5rem 0;
+    border: 1px solid rgba(212,162,78,0.15);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .parallel-col { padding: 2.5rem; }
+  .parallel-col:first-child {
+    background: rgba(196,77,77,0.04);
+    border-right: 1px solid rgba(212,162,78,0.1);
+  }
+  .parallel-col:last-child { background: rgba(212,162,78,0.04); }
+  .parallel-col h3 {
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 1.5rem;
+  }
+  .parallel-col ul { list-style: none; }
+  .parallel-col ul li {
+    font-size: 0.95rem;
+    color: var(--gray);
+    margin-bottom: 1rem;
+    padding-left: 1.2rem;
+    position: relative;
+    line-height: 1.6;
+  }
+  .parallel-col ul li::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    color: var(--gold);
+    font-weight: 700;
+  }
+
+  /* ── DOWNLOAD ── */
+  .download {
+    background: var(--navy);
+    text-align: center;
+  }
+  .download-card {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 3rem;
+    background: var(--charcoal);
+    border: 1px solid rgba(212,162,78,0.15);
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  .download-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--gold), var(--gold-dark), var(--gold));
+  }
+  .download-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+  }
+  .download-card h3 {
+    font-size: 1.3rem;
+    margin-bottom: 0.8rem;
+  }
+  .download-card p {
+    color: var(--gray);
+    font-size: 0.95rem;
+    margin-bottom: 2rem;
+    line-height: 1.7;
+  }
+  .download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.9rem 2.2rem;
+    background: transparent;
+    border: 2px solid var(--gold);
+    color: var(--gold);
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-decoration: none;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+    transition: all 0.3s;
+  }
+  .download-btn:hover {
+    background: var(--gold);
+    color: var(--navy);
+    box-shadow: 0 4px 24px rgba(212,162,78,0.3);
+  }
+
+  /* ── CONTACT / LEAD CAPTURE ── */
+  .contact { background: var(--charcoal); }
+  .contact-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: start;
+  }
+  .contact-text p { color: var(--gray); margin-bottom: 1.2rem; font-size: 1rem; }
+
+  .form-card {
+    background: var(--navy);
+    padding: 2.5rem;
+    border-radius: 8px;
+    border: 1px solid rgba(212,162,78,0.12);
+  }
+  .form-card h3 {
+    font-size: 1.15rem;
+    margin-bottom: 0.4rem;
+    color: var(--white);
+  }
+  .form-card .form-sub {
+    font-size: 0.85rem;
+    color: var(--gray);
+    margin-bottom: 1.8rem;
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+  }
+  .form-group { margin-bottom: 1.2rem; }
+  .form-group label {
+    display: block;
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gray);
+    margin-bottom: 0.5rem;
+  }
+  .form-group label .optional { color: rgba(255,255,255,0.3); font-weight: 400; }
+  .form-group input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(212,162,78,0.2);
+    border-radius: 4px;
+    color: var(--white);
+    font-size: 0.95rem;
+    font-family: Georgia, serif;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    outline: none;
+  }
+  .form-group input:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(212,162,78,0.1);
+  }
+  .form-group input::placeholder { color: rgba(255,255,255,0.2); }
+
+  .submit-btn {
+    width: 100%;
+    padding: 0.9rem;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: var(--navy);
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-weight: 700;
+    font-size: 0.92rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    transition: transform 0.3s, box-shadow 0.3s;
+    margin-top: 0.5rem;
+  }
+  .submit-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(212,162,78,0.3);
+  }
+
+  .thank-you {
+    display: none;
+    text-align: center;
+    padding: 2rem 0;
+  }
+  .thank-you .check {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+  }
+  .thank-you h3 {
+    color: var(--gold);
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+  }
+  .thank-you p { color: var(--gray); font-size: 0.95rem; }
+
+  /* ── FOOTER ── */
+  footer {
+    background: #080b14;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    border-top: 1px solid rgba(212,162,78,0.08);
+  }
+  footer .footer-logo {
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--gold);
+    margin-bottom: 0.5rem;
+  }
+  footer p {
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 0.04em;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    nav ul { display: none; }
+    .about-grid,
+    .parallel-grid,
+    .contact-wrapper {
+      grid-template-columns: 1fr;
+    }
+    .parallel-col:first-child { border-right: none; border-bottom: 1px solid rgba(212,162,78,0.1); }
+    .stat-bar { flex-direction: column; gap: 1.5rem; }
+    section { padding: 3.5rem 1.5rem; }
+    .hero { padding: 5rem 1.5rem 3rem; }
+    .pullquote { padding: 1.2rem 1.4rem; font-size: 1.05rem; }
+    .form-card { padding: 1.8rem; }
+    .download-card { padding: 2rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ NAV ═══ -->
+<nav>
+  <a href="#" class="logo">AI FORENSIC <span>AGENTS</span></a>
+  <ul>
+    <li><a href="#about">About</a></li>
+    <li><a href="#narrative">History</a></li>
+    <li><a href="#download">Research</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<section class="hero" id="hero">
+  <!-- Floating steam particles -->
+  <div class="steam-particle" style="left:12%;bottom:10%;animation-duration:8s;animation-delay:0s;width:4px;height:4px;"></div>
+  <div class="steam-particle" style="left:28%;bottom:5%;animation-duration:10s;animation-delay:1.2s;"></div>
+  <div class="steam-particle" style="left:45%;bottom:15%;animation-duration:7s;animation-delay:0.5s;width:5px;height:5px;"></div>
+  <div class="steam-particle" style="left:62%;bottom:8%;animation-duration:9s;animation-delay:2s;"></div>
+  <div class="steam-particle" style="left:78%;bottom:12%;animation-duration:11s;animation-delay:0.8s;width:4px;height:4px;"></div>
+  <div class="steam-particle" style="left:88%;bottom:6%;animation-duration:8.5s;animation-delay:3s;"></div>
+  <div class="steam-particle" style="left:35%;bottom:3%;animation-duration:12s;animation-delay:4s;width:3px;height:3px;"></div>
+  <div class="steam-particle" style="left:55%;bottom:18%;animation-duration:9.5s;animation-delay:1.8s;"></div>
+  <div class="steam-particle" style="left:8%;bottom:20%;animation-duration:10.5s;animation-delay:2.5s;width:4px;height:4px;"></div>
+  <div class="steam-particle" style="left:72%;bottom:2%;animation-duration:7.5s;animation-delay:0.3s;"></div>
+  <div class="steam-particle" style="left:92%;bottom:15%;animation-duration:13s;animation-delay:3.5s;width:5px;height:5px;"></div>
+  <div class="steam-particle" style="left:20%;bottom:22%;animation-duration:11s;animation-delay:5s;"></div>
+
+  <div class="hero-content">
+    <div class="hero-eyebrow">AI Forensic Agents — Investigating AI Harms</div>
+    <h1>They Ignored Exploding Boilers&nbsp;for&nbsp;Decades.<br><em>Are We Doing the Same&nbsp;with&nbsp;AI?</em></h1>
+    <p class="subtitle">
+      Between 1830 and 1932, steam boiler explosions killed thousands aboard American riverboats — preventable deaths met with indifference, until regulation finally arrived. Today, a new class of invisible machines is causing a new class of invisible harms.
+    </p>
+    <a href="#contact" class="hero-cta">Investigate AI Harms With Us</a>
+  </div>
+  <div class="scroll-indicator">
+    <span>Scroll to explore</span>
+    <span class="arrow">↓</span>
+  </div>
+</section>
+
+<!-- ═══ ABOUT ═══ -->
+<section class="about" id="about">
+  <div class="container">
+    <div class="about-grid">
+      <div class="about-text">
+        <div class="section-eyebrow">Who We Are</div>
+        <h2 class="section-title">A Human-Centered <span>AI Harms</span> Investigation Firm</h2>
+        <div class="divider"></div>
+        <p>AI Forensic Agents was founded on a conviction that has grown urgent: when artificial intelligence systems cause harm — to individuals, communities, or democratic institutions — someone must investigate with rigor, independence, and an unwavering commitment to human dignity.</p>
+        <p>We are investigators, not evangelists. Our work begins where AI failures end: in the wreckage of automated decisions that denied healthcare, amplified discrimination, enabled surveillance, or eroded the foundations of informed consent.</p>
+        <p>We study history because history teaches us what happens when transformative technologies outpace accountability. The steam age offers a devastating and instructive parallel.</p>
+      </div>
+      <div>
+        <ul class="about-values">
+          <li>
+            <strong>Forensic Rigor</strong>
+            We trace AI harms to their root causes — data, design, deployment, and institutional failure.
+          </li>
+          <li>
+            <strong>Human-Centered</strong>
+            Every investigation begins and ends with the people affected, not the systems that harmed them.
+          </li>
+          <li>
+            <strong>Historical Perspective</strong>
+            We draw on centuries of regulatory failure and reform to contextualize modern AI risks.
+          </li>
+          <li>
+            <strong>Accountability</strong>
+            We believe that those who deploy AI systems owe a duty of care — and that duty must be enforceable.
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ NARRATIVE ═══ -->
+<section class="narrative" id="narrative">
+  <div class="container">
+    <div class="section-eyebrow">The Historical Parallel</div>
+    <h2 class="section-title">The Age of <span>Preventable Catastrophe</span></h2>
+    <div class="divider"></div>
+
+    <p class="lead-text">
+      For most of the nineteenth century, Americans boarded steamboats knowing they might not survive the journey. <strong>Boiler explosions were not rare events — they were an epidemic.</strong> When one or more flues inside a boiler collapsed, the resulting rupture could destroy an entire vessel in seconds. Passengers died from the explosion itself, from scalding released steam, from drowning in the aftermath, and from fires that consumed the wreckage.
+    </p>
+
+    <div class="stat-bar">
+      <div class="stat-item">
+        <div class="stat-number">14</div>
+        <div class="stat-label">Major Disasters Listed</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">680–1,290+</div>
+        <div class="stat-label">Estimated Dead</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">102</div>
+        <div class="stat-label">Years of Catastrophe</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">0</div>
+        <div class="stat-label">Early Regulations</div>
+      </div>
+    </div>
+
+    <div class="pullquote">
+      "The dead of the steamboat era were not victims of fate. They were victims of negligence, greed, and the absence of regulatory will — the same forces that shape AI deployment today."
+    </div>
+
+    <h3 style="font-size:1.15rem; margin-bottom:1.5rem; color:var(--gold-light);">A Chronicle of Disaster</h3>
+
+    <div class="disaster-timeline">
+      <div class="disaster-entry">
+        <div class="disaster-year">FEBRUARY 24, 1830</div>
+        <div class="disaster-name">Steamboat Helen McGregor</div>
+        <div class="disaster-details">Boiler explosion on the Mississippi River, near Memphis, Tennessee. One of the earliest recorded mass-casualty steamboat disasters in American history.</div>
+        <div class="disaster-toll">⬥ 33–60 killed</div>
+      </div>
+
+      <div class="disaster-entry">
+        <div class="disaster-year">APRIL 25, 1838</div>
+        <div class="disaster-name">Steamboat Moselle</div>
+        <div class="disaster-details">Boiler explosion and fire near Cincinnati, Ohio. The Moselle was racing to depart ahead of a rival steamer when her overtaxed boilers detonated. Bodies were hurled hundreds of feet. The disaster prompted some of the first public calls for steamboat regulation.</div>
+        <div class="disaster-toll">⬥ 81–200 killed</div>
+      </div>
+
+      <div class="disaster-entry">
+        <div class="disaster-year">OCTOBER 23, 1844</div>
+        <div class="disaster-name">Steamer Lucy Walker</div>
+        <div class="disaster-details">Boiler explosion on the Ohio River near New Albany, Indiana. The vessel was destroyed almost instantaneously.</div>
+        <div class="disaster-toll">⬥ 56–80 killed</div>
+      </div>
+
+      <div class="disaster-entry">
+        <div class="disaster-year">DECEMBER 29, 1847</div>
+        <div class="disaster-name">Steamer A.N. Johnston</div>
+        <div class="disaster-details">Boiler explosion on the Ohio River near Maysville, Kentucky. Another mid-river catastrophe on one of the nation's busiest waterways.</div>
+        <div class="disaster-toll">⬥ 60–80 killed</div>
+      </div>
+
+      <div class="disaster-entry">
+        <div class="disaster-year">DECEMBER 13, 1850</div>
+        <div class="disaster-name">Steamer-Tug Anglo-Norman</div>
+        <div class="disaster-details">Boiler explosion near New Orleans, Louisiana. The blast claimed scores of lives in the heart of America's busiest port.</div>
+        <div class="disaster-toll">⬥ 20–100 killed</div>
+      </div>
+
+      <div class="disaster-entry">
+        <div class="disaster-year">APRIL 3, 1852</div>
+        <div class="disaster-name">Steamboat Glencoe</div>
+        <div class="disaster-details">Boiler explosion and fire at St. Louis, Missouri. The fire that followed the initial explosion compounded the death toll.</div>
+        <div class="disaster-toll">⬥ 40–62 killed</div>
+      </div>
+
+      <div class="disaster-entry">
+        <div class="disaster-year">APRIL 9, 1852</div>
+        <div class="disaster-name">Steamboat Saluda</div>
+        <div class="disaster-details">Boiler explosion on the Missouri River at Lexington, Missouri — just six days after the Glencoe disaster. Many aboard were Mormon emigrants heading west.</div>
+        <div class="disaster-toll">⬥ 54–100 killed</div>
+      </div>
+
+      <div class="disaster-entry">
+        <div class="disaster-year">JANUARY 27, 1855</div>
+        <div class="disaster-name">Steamboat Pearl</div>
+        <div class="disaster-details">Boiler explosion on the Sacramento River, Sacramento, California. The gold rush era brought hurried steamboat construction with little oversight.</div>
+        <div class="disaster-toll">⬥ 67–80 killed</div>
+      </div>
+
+      <div class="disaster-entry">
+        <div class="disaster-year">FEBRUARY 27, 1859</div>
+        <div class="disaster-name">Steamer Princess</div>
+        <div class="disaster-details">Boiler explosion and fire on the Mississippi River near Baton Rouge, Louisiana. The fire that erupted after the blast made rescue nearly impossible.</div>
+        <div class="disaster-toll">⬥ ~70 killed</div>
+      </div>
+
+      <div class="disaster-entry">
+        <div class="disaster-year">OCTOBER 12, 1865</div>
+        <div class="disaster-name">Steamer Yosemite</div>
+        <div class="disaster-details">Boiler explosion on the Sacramento River at Rio Vista, California. Even after the Civil War — which should have impressed the horrors of mass death upon the national conscience — the explosions continued.</div>
+        <div class="disaster-toll">⬥ 55–68 killed</div>
+      </div>
+
+      <div class="disaster-entry">
+        <div class="disaster-year">FEBRUARY 2, 1866</div>
+        <div class="disaster-name">Steamboat W.R. Carter</div>
+        <div class="disaster-details">Boiler explosion on the Mississippi River near Island No. 98. The single deadliest disaster in this record, yet it scarcely changed the regulatory landscape.</div>
+        <div class="disaster-toll">⬥ 123–215 killed</div>
+      </div>
+
+      <div class="disaster-entry">
+        <div class="disaster-year">AUGUST 27, 1871</div>
+        <div class="disaster-name">Steamboat Ocean Wave</div>
+        <div class="disaster-details">Boiler explosion at Point Clear near Mobile, Alabama. Decades of disasters, and still no comprehensive federal safety framework.</div>
+        <div class="disaster-toll">⬥ 34–75 killed</div>
+      </div>
+
+      <div class="disaster-entry">
+        <div class="disaster-year">SEPTEMBER 9, 1932</div>
+        <div class="disaster-name">Steamboat Observation</div>
+        <div class="disaster-details">Boiler explosion on the East River near Riker's Island, New York. Over a century after the Helen McGregor, boilers were still killing people — this time in the shadow of Manhattan's skyscrapers.</div>
+        <div class="disaster-toll">⬥ 72 killed</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ PARALLEL ═══ -->
+<section class="parallel" id="parallel">
+  <div class="container">
+    <div class="section-eyebrow">The Argument</div>
+    <h2 class="section-title">Then and <span>Now</span></h2>
+    <div class="divider"></div>
+    <p style="color:var(--gray); margin-bottom:1.5rem; font-size:1.02rem; max-width:720px;">
+      The structural dynamics that allowed steam boiler explosions to persist for over a century are remarkably similar to the dynamics enabling unchecked AI harms today.
+    </p>
+
+    <div class="parallel-grid">
+      <div class="parallel-col">
+        <h3>Steam Age (1830–1932)</h3>
+        <ul>
+          <li>Profit incentives drove operators to over-pressure boilers and skip inspections</li>
+          <li>No federal regulatory framework for decades despite mounting deaths</li>
+          <li>Victims were often passengers with no knowledge of the risks they faced</li>
+          <li>Industry resisted safety standards as costly and unnecessary</li>
+          <li>Expertise was siloed — few could inspect what they could not see</li>
+          <li>Accountability was diffuse: builders, operators, and owners all pointed elsewhere</li>
+        </ul>
+      </div>
+      <div class="parallel-col">
+        <h3>AI Age (Present Day)</h3>
+        <ul>
+          <li>Market pressure drives deployment of AI systems before adequate testing</li>
+          <li>Regulatory frameworks lag far behind the pace of AI deployment</li>
+          <li>Those harmed by AI decisions often have no knowledge of algorithmic involvement</li>
+          <li>Industry frames regulation as innovation-killing overreach</li>
+          <li>Algorithmic opacity means few can audit what they cannot understand</li>
+          <li>Accountability is diffuse: developers, deployers, and vendors all point elsewhere</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="pullquote" style="margin-top:2.5rem;">
+      The steam boiler epidemic ended not because industry self-corrected, but because society demanded enforceable standards. AI harms will follow the same trajectory — the only question is how many will be harmed before we act.
+    </div>
+  </div>
+</section>
+
+<!-- ═══ DOWNLOAD ═══ -->
+<section class="download" id="download">
+  <div class="container">
+    <div class="section-eyebrow" style="text-align:center;">Research</div>
+    <h2 class="section-title" style="text-align:center;">Read the Full <span>Historical Analysis</span></h2>
+    <div class="divider divider-center"></div>
+
+    <div class="download-card">
+      <div class="download-icon">📄</div>
+      <h3>Steam Boiler Disasters: Historical Analysis</h3>
+      <p>
+        Our comprehensive research document traces the full arc of American steam boiler catastrophes and draws detailed parallels to the present-day AI safety crisis. Essential reading for policymakers, researchers, and anyone concerned with technological accountability.
+      </p>
+      <a href="https://github.com/AIForensicAgents/steam-boiler-disasters-article/blob/bca7a0440c4f9b9170ca50dbc8c4872b0813f174/Steam_Boiler_Disasters_Historical_Analysis.pdf" target="_blank" rel="noopener" class="download-btn">
+        <span>↓</span> Download PDF from GitHub
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CONTACT / LEAD CAPTURE ═══ -->
+<section class="contact" id="contact">
+  <div class="container">
+    <div class="contact-wrapper">
+      <div class="contact-text">
+        <div class="section-eyebrow">Get Involved</div>
+        <h2 class="section-title">The Investigation <span>Starts Here</span></h2>
+        <div class="divider"></div>
+        <p>Whether you're a policymaker seeking evidence-based guidance, a journalist investigating AI harms, a researcher studying algorithmic accountability, or an individual who has been affected by an automated decision — we want to hear from you.</p>
+        <p>AI Forensic Agents exists because the gap between AI deployment and AI accountability is growing wider every day. Closing that gap requires a coalition of investigators, advocates, and informed citizens.</p>
+        <p>Leave your details and we'll be in touch. No spam. No algorithms deciding whether you're worth a reply. Just humans, investigating on behalf of humans.</p>
+      </div>
+      <div>
+        <div class="form-card">
+          <div id="formContainer">
+            <h3>Connect With Us</h3>
+            <p class="form-sub">Your email is required. Your name is optional. Your concern matters.</p>
+            <form id="leadForm" onsubmit="return handleSubmit(event)">
+              <div class="form-group">
+                <label for="nameField">Name <span class="optional">(optional)</span></label>
+                <input type="text" id="nameField" name="name" placeholder="Your name" autocomplete="name">
+              </div>
+              <div class="form-group">
+                <label for="emailField">Email <span style="color:var(--red-muted);">*</span></label>
+                <input type="email" id="emailField" name="email" placeholder="your.email@example.com" required autocomplete="email">
+              </div>
+              <button type="submit" class="submit-btn">Send Your Information →</button>
+            </form>
+          </div>
+          <div class="thank-you" id="thankYou">
+            <div class="check">✓</div>
+            <h3>Thank You</h3>
+            <p>Your email client should open momentarily. If it doesn't, please reach out to us directly at craigw@ast.engineer.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <div class="footer-logo">AI FORENSIC AGENTS</div>
+  <p>&copy; 2025 AI Forensic Agents. All rights reserved.</p>
+</footer>
+
+<script>
+function handleSubmit(e) {
+  e.preventDefault();
+
+  var name = document.getElementById('nameField').value.trim();
+  var email = document.getElementById('emailField').value.trim();
+
+  if (!email) {
+    document.getElementById('emailField').focus();
+    return false;
+  }
+
+  var body = 'Name: ' + (name || '(not provided)') + ', Email: ' + email;
+  window.location.href = 'mailto:craigw@ast.engineer?subject=Lead%20Capture&body=' + encodeURIComponent(body);
+
+  document.getElementById('formContainer').querySelector('form').style.display = 'none';
+  document.getElementById('formContainer').querySelector('h3').style.display = 'none';
+  document.getElementById('formContainer').querySelector('.form-sub').style.display = 'none';
+  document.getElementById('thankYou').style.display = 'block';
+
+  return false;
+}
+</script>
+
+</body>
+</html>
